@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Editor - by krzysiekq</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .toolbar {
+            background-color: #2d2d30;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid #3e3e42;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .toolbar button {
+            background-color: #3e3e42;
+            color: #d4d4d4;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .toolbar button:hover {
+            background-color: #4e4e52;
+        }
+
+        .toolbar button:active {
+            background-color: #5e5e62;
+        }
+
+        .zoom-info {
+            margin-left: auto;
+            padding: 5px 10px;
+            background-color: #3e3e42;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .zoom-info:hover {
+            background-color: #4e4e52;
+        }
+
+        .editor-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden; /* CodeMirror handles scrolling */
+        }
+
+        /* Konfiguracja wyglądu CodeMirror */
+        .CodeMirror {
+            height: 100%;
+            font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* Dostosowanie paska błędów */
+        .CodeMirror-lint-marker-error {
+            width: 16px;
+        }
+
+        /* Watermark signature */
+        .signature {
+            position: absolute;
+            bottom: 10px;
+            right: 25px; /* Przesunięcie, by nie zasłaniać scrollbara */
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            pointer-events: none;
+            user-select: none;
+            z-index: 100;
+        }
+
+        /* Hidden inputs for file operations */
+        .file-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button id="loadBtn">Load</button>
+        <button id="saveBtn">Save</button>
+        <button id="runBtn">Run</button>
+        <button id="clearBtn">Clear All</button>
+        <div class="zoom-info" id="zoomInfo" title="Click to reset to 100%">100%</div>
+    </div>
+    
+    <div class="editor-container">
+        <textarea id="editor" placeholder="Write your HTML code here..."></textarea>
+    </div>
+
+    <div class="signature">Krzysieqk</div>
+
+    <input type="file" id="fileInput" class="file-input" accept=".html,.htm">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    
+    <script src="https://unpkg.com/htmlhint@0.11.0/lib/htmlhint.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/html-lint.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadBtn = document.getElementById('loadBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const runBtn = document.getElementById('runBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const textarea = document.getElementById('editor');
+            const zoomInfo = document.getElementById('zoomInfo');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Inicjalizacja CodeMirror
+            const editor = CodeMirror.fromTextArea(textarea, {
+                mode: "htmlmixed",           // Obsługa HTML, CSS i JS razem
+                theme: "dracula",            // Ciemny motyw
+                lineNumbers: true,           // Numery linii
+                autoCloseTags: true,         // Automatyczne zamykanie tagów
+                lineWrapping: true,          // Zawijanie wierszy
+                gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
+                lint: true                   // Włączenie sprawdzania błędów
+            });
+
+            let currentZoom = 100;
+            const minZoom = 50;
+            const maxZoom = 200;
+            const zoomStep = 10;
+            
+            // Function to update zoom
+            function updateZoom(newZoom) {
+                currentZoom = newZoom;
+                const wrapper = editor.getWrapperElement();
+                wrapper.style.fontSize = (14 * currentZoom / 100) + 'px';
+                editor.refresh(); // Odświeżenie edytora po zmianie rozmiaru
+                zoomInfo.textContent = currentZoom + '%';
+            }
+            
+            // Function to run HTML code
+            function runHTML() {
+                const htmlContent = editor.getValue(); // Pobieramy wartość z CodeMirror
+                if (htmlContent.trim() === '') {
+                    alert('Editor is empty! Please write some HTML code to run.');
+                    return;
+                }
+                
+                const newWindow = window.open('', '_blank');
+                newWindow.document.write(htmlContent);
+                newWindow.document.close();
+            }
+            
+            // Function to load file
+            function loadFile() {
+                fileInput.click();
+            }
+            
+            // File selection handler
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (!file.name.toLowerCase().endsWith('.html') && !file.name.toLowerCase().endsWith('.htm')) {
+                    alert('Please select an HTML file (.html or .htm)');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editor.setValue(e.target.result); // Ustawiamy wartość w CodeMirror
+                };
+                reader.readAsText(file);
+            });
+            
+            // Function to save file
+            function saveFile() {
+                const content = editor.getValue(); // Pobieramy wartość z CodeMirror
+                if (content.trim() === '') {
+                    alert('Editor is empty! There is nothing to save.');
+                    return;
+                }
+                
+                const blob = new Blob([content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'sigma-file.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            // Function to clear all content
+            function clearAll() {
+                if (editor.getValue().trim() === '') {
+                    return; 
+                }
+                
+                if (confirm('Are you sure you want to clear all editor content?')) {
+                    editor.setValue(''); // Czyścimy CodeMirror
+                    editor.focus();
+                }
+            }
+            
+            // Assign functions to buttons
+            loadBtn.addEventListener('click', loadFile);
+            saveBtn.addEventListener('click', saveFile);
+            runBtn.addEventListener('click', runHTML);
+            clearBtn.addEventListener('click', clearAll);
+            
+            // Click handler for zoom display - reset to 100%
+            zoomInfo.addEventListener('click', function() {
+                updateZoom(100);
+            });
+            
+            // Zoom handling with Ctrl + Scroll (CodeMirror wrapper event)
+            editor.getWrapperElement().addEventListener('wheel', function(e) {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    
+                    if (e.deltaY < 0) {
+                        updateZoom(Math.min(maxZoom, currentZoom + zoomStep));
+                    } else {
+                        updateZoom(Math.max(minZoom, currentZoom - zoomStep));
+                    }
+                }
+            });
+
+            // Sample HTML code on start
+            editor.setValue(`<!DOCTYPE html>
+<html>
+<head>
+    <title>My Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to my page!</h1>
+    <p>This is sample HTML content.</p>
+    
+    <button onclick="alert('Hello World!')">Click me</button>
+</body>
+</html>`);
+        });
+    </script>
+</body>
+</html>

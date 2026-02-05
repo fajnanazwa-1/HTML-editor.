@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML Editor - by krzysiekq</title>
+    <title>Pro Editor - by krzysiekqq</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/base16-dark.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.css">
     
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600&family=JetBrains+Mono&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -17,113 +19,126 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
             height: 100vh;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
-            position: relative;
+            padding: 30px;
+            overflow: hidden;
         }
 
         .toolbar {
-            background-color: #2d2d30;
-            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 25px;
             display: flex;
-            gap: 10px;
-            border-bottom: 1px solid #3e3e42;
-            flex-shrink: 0;
+            gap: 15px;
+            border-radius: 24px;
+            margin-bottom: 25px;
             align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
 
         .toolbar button {
-            background-color: #3e3e42;
-            color: #d4d4d4;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 22px;
+            border-radius: 14px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             font-size: 14px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 500;
         }
 
         .toolbar button:hover {
-            background-color: #4e4e52;
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
         }
 
-        .toolbar button:active {
-            background-color: #5e5e62;
+        .toolbar button#runBtn {
+            background: #ffffff;
+            color: #000000;
+            font-weight: 600;
+            border: none;
+        }
+
+        .toolbar button#runBtn:hover {
+            background: #e0e0e0;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
         }
 
         .zoom-info {
             margin-left: auto;
-            padding: 5px 10px;
-            background-color: #3e3e42;
-            border-radius: 4px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .zoom-info:hover {
-            background-color: #4e4e52;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
         }
 
         .editor-container {
             flex: 1;
-            position: relative;
-            overflow: hidden; /* CodeMirror handles scrolling */
+            border-radius: 30px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #111111;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
         }
 
-        /* Konfiguracja wyglądu CodeMirror */
         .CodeMirror {
             height: 100%;
-            font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        /* Dostosowanie paska błędów */
-        .CodeMirror-lint-marker-error {
-            width: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            background: transparent !important;
+            padding: 20px;
         }
 
-        /* Watermark signature */
+        .CodeMirror-gutters {
+            background: transparent !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding-right: 10px;
+        }
+
+        .CodeMirror-linenumber {
+            color: rgba(255, 255, 255, 0.2) !important;
+        }
+
         .signature {
-            position: absolute;
-            bottom: 10px;
-            right: 25px; /* Przesunięcie, by nie zasłaniać scrollbara */
+            position: fixed;
+            bottom: 45px;
+            right: 55px;
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.3);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 300;
+            letter-spacing: 4px;
+            color: rgba(255, 255, 255, 0.1);
+            text-transform: lowercase;
             pointer-events: none;
-            user-select: none;
-            z-index: 100;
         }
 
-        /* Hidden inputs for file operations */
-        .file-input {
-            display: none;
-        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        .file-input { display: none; }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <button id="loadBtn">Load</button>
+        <button id="loadBtn">Open</button>
         <button id="saveBtn">Save</button>
-        <button id="runBtn">Run</button>
-        <button id="clearBtn">Clear All</button>
-        <div class="zoom-info" id="zoomInfo" title="Click to reset to 100%">100%</div>
+        <button id="clearBtn">Clear</button>
+        <button id="runBtn">Run Preview</button>
+        <div class="zoom-info" id="zoomInfo">100%</div>
     </div>
     
     <div class="editor-container">
-        <textarea id="editor" placeholder="Write your HTML code here..."></textarea>
+        <textarea id="editor"></textarea>
     </div>
 
-    <div class="signature">Krzysieqk</div>
+    <div class="signature">krzysiekqq</div>
 
     <input type="file" id="fileInput" class="file-input" accept=".html,.htm">
     
@@ -132,161 +147,45 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
-    
-    <script src="https://unpkg.com/htmlhint@0.11.0/lib/htmlhint.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/html-lint.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const loadBtn = document.getElementById('loadBtn');
-            const saveBtn = document.getElementById('saveBtn');
-            const runBtn = document.getElementById('runBtn');
-            const clearBtn = document.getElementById('clearBtn');
-            const textarea = document.getElementById('editor');
-            const zoomInfo = document.getElementById('zoomInfo');
-            const fileInput = document.getElementById('fileInput');
-            
-            // Inicjalizacja CodeMirror
-            const editor = CodeMirror.fromTextArea(textarea, {
-                mode: "htmlmixed",           // Obsługa HTML, CSS i JS razem
-                theme: "dracula",            // Ciemny motyw
-                lineNumbers: true,           // Numery linii
-                autoCloseTags: true,         // Automatyczne zamykanie tagów
-                lineWrapping: true,          // Zawijanie wierszy
-                gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
-                lint: true                   // Włączenie sprawdzania błędów
+            const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+                mode: "htmlmixed",
+                theme: "base16-dark",
+                lineNumbers: true,
+                autoCloseTags: true,
+                lineWrapping: true
             });
 
-            let currentZoom = 100;
-            const minZoom = 50;
-            const maxZoom = 200;
-            const zoomStep = 10;
+            document.getElementById('runBtn').addEventListener('click', () => {
+                const win = window.open('', '_blank');
+                win.document.write(editor.getValue());
+                win.document.close();
+            });
+
+            document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
             
-            // Function to update zoom
-            function updateZoom(newZoom) {
-                currentZoom = newZoom;
-                const wrapper = editor.getWrapperElement();
-                wrapper.style.fontSize = (14 * currentZoom / 100) + 'px';
-                editor.refresh(); // Odświeżenie edytora po zmianie rozmiaru
-                zoomInfo.textContent = currentZoom + '%';
-            }
-            
-            // Function to run HTML code
-            function runHTML() {
-                const htmlContent = editor.getValue(); // Pobieramy wartość z CodeMirror
-                if (htmlContent.trim() === '') {
-                    alert('Editor is empty! Please write some HTML code to run.');
-                    return;
-                }
-                
-                const newWindow = window.open('', '_blank');
-                newWindow.document.write(htmlContent);
-                newWindow.document.close();
-            }
-            
-            // Function to load file
-            function loadFile() {
-                fileInput.click();
-            }
-            
-            // File selection handler
-            fileInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                if (!file.name.toLowerCase().endsWith('.html') && !file.name.toLowerCase().endsWith('.htm')) {
-                    alert('Please select an HTML file (.html or .htm)');
-                    return;
-                }
-                
+            document.getElementById('fileInput').addEventListener('change', (e) => {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    editor.setValue(e.target.result); // Ustawiamy wartość w CodeMirror
-                };
-                reader.readAsText(file);
-            });
-            
-            // Function to save file
-            function saveFile() {
-                const content = editor.getValue(); // Pobieramy wartość z CodeMirror
-                if (content.trim() === '') {
-                    alert('Editor is empty! There is nothing to save.');
-                    return;
-                }
-                
-                const blob = new Blob([content], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'sigma-file.html';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-            
-            // Function to clear all content
-            function clearAll() {
-                if (editor.getValue().trim() === '') {
-                    return; 
-                }
-                
-                if (confirm('Are you sure you want to clear all editor content?')) {
-                    editor.setValue(''); // Czyścimy CodeMirror
-                    editor.focus();
-                }
-            }
-            
-            // Assign functions to buttons
-            loadBtn.addEventListener('click', loadFile);
-            saveBtn.addEventListener('click', saveFile);
-            runBtn.addEventListener('click', runHTML);
-            clearBtn.addEventListener('click', clearAll);
-            
-            // Click handler for zoom display - reset to 100%
-            zoomInfo.addEventListener('click', function() {
-                updateZoom(100);
-            });
-            
-            // Zoom handling with Ctrl + Scroll (CodeMirror wrapper event)
-            editor.getWrapperElement().addEventListener('wheel', function(e) {
-                if (e.ctrlKey) {
-                    e.preventDefault();
-                    
-                    if (e.deltaY < 0) {
-                        updateZoom(Math.min(maxZoom, currentZoom + zoomStep));
-                    } else {
-                        updateZoom(Math.max(minZoom, currentZoom - zoomStep));
-                    }
-                }
+                reader.onload = (e) => editor.setValue(e.target.result);
+                reader.readAsText(e.target.files[0]);
             });
 
-            // Sample HTML code on start
-            editor.setValue(`<!DOCTYPE html>
-<html>
-<head>
-    <title>My Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background-color: #f0f0f0;
-        }
-        h1 {
-            color: #333;
-        }
-    </style>
-</head>
-<body>
-    <h1>Welcome to my page!</h1>
-    <p>This is sample HTML content.</p>
-    
-    <button onclick="alert('Hello World!')">Click me</button>
-</body>
-</html>`);
+            document.getElementById('saveBtn').addEventListener('click', () => {
+                const blob = new Blob([editor.getValue()], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'index.html';
+                a.click();
+            });
+
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                if (confirm('Clear code?')) editor.setValue('');
+            });
+
+            editor.setValue('<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <style>\n    body { background: #000; color: #fff; text-align: center; padding-top: 50px; font-family: sans-serif; }\n  </style>\n</head>\n<body>\n  <h1>Clean Design</h1>\n  <p>Ready to code.</p>\n</body>\n</html>');
         });
     </script>
 </body>

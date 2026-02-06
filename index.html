@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Editor - by krzysiekqq</title>
+    <title>HTML editor</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/base16-dark.min.css">
@@ -87,6 +87,39 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: #111111;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .editor-container.drag-over {
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 60px rgba(255, 255, 255, 0.1);
+        }
+
+        .drag-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .editor-container.drag-over .drag-overlay {
+            display: flex;
+        }
+
+        .drag-text {
+            font-size: 24px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 2px;
         }
 
         .CodeMirror {
@@ -134,7 +167,10 @@
         <div class="zoom-info" id="zoomInfo">100%</div>
     </div>
     
-    <div class="editor-container">
+    <div class="editor-container" id="editorContainer">
+        <div class="drag-overlay">
+            <div class="drag-text">DROP HTML FILE</div>
+        </div>
         <textarea id="editor"></textarea>
     </div>
 
@@ -159,6 +195,42 @@
                 lineWrapping: true
             });
 
+            const editorContainer = document.getElementById('editorContainer');
+
+            // Funkcja do wczytywania pliku
+            function loadFile(file) {
+                if (file && (file.name.endsWith('.html') || file.name.endsWith('.htm'))) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => editor.setValue(e.target.result);
+                    reader.readAsText(file);
+                }
+            }
+
+            // Drag & Drop
+            editorContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                editorContainer.classList.add('drag-over');
+            });
+
+            editorContainer.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                editorContainer.classList.remove('drag-over');
+            });
+
+            editorContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                editorContainer.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    loadFile(files[0]);
+                }
+            });
+
+            // Poprzednie funkcje
             document.getElementById('runBtn').addEventListener('click', () => {
                 const win = window.open('', '_blank');
                 win.document.write(editor.getValue());
@@ -168,9 +240,7 @@
             document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
             
             document.getElementById('fileInput').addEventListener('change', (e) => {
-                const reader = new FileReader();
-                reader.onload = (e) => editor.setValue(e.target.result);
-                reader.readAsText(e.target.files[0]);
+                loadFile(e.target.files[0]);
             });
 
             document.getElementById('saveBtn').addEventListener('click', () => {

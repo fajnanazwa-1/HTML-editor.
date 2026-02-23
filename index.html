@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML editor</title>
+    <title>HTML editor. v.3; by krzysiekqq</title>
     
+    <!-- CodeMirror -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/base16-dark.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600&family=JetBrains+Mono&display=swap');
-
+        /* ---------- RESET & BASE ---------- */
         * {
             margin: 0;
             padding: 0;
@@ -19,244 +22,546 @@
         }
 
         body {
+            background: #0f0f17;
             font-family: 'Inter', sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
             height: 100vh;
             display: flex;
-            flex-direction: column;
-            padding: 30px;
-            overflow: hidden;
-        }
-
-        .toolbar {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 12px 25px;
-            display: flex;
-            gap: 15px;
-            border-radius: 24px;
-            margin-bottom: 25px;
+            justify-content: center;
             align-items: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            padding: 12px;
+            color: #a9b1d6;
         }
 
-        .toolbar button {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px 22px;
-            border-radius: 14px;
+        /* ---------- MAIN CONTAINER ---------- */
+        .editor-wrap {
+            width: 100vw;
+            height: 100%;
+            background: #24283b;
+            border-radius: 28px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #414868;
+        }
+
+        /* ---------- TOOLBAR ---------- */
+        .toolbar {
+            background: #1f2335;
+            padding: 16px 28px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            border-bottom: 1px solid #414868;
+            backdrop-filter: blur(10px);
+        }
+
+        .toolbar-button {
+            background: transparent;
+            border: none;
+            color: #9aa5ce;
+            font-size: 22px;
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .toolbar-button:hover {
+            background: #2f354a;
+            color: #c0caf5;
+            border-color: #565f89;
+            transform: translateY(-2px);
+        }
+
+        .toolbar-button.run {
+            background: #bb9af7;
+            color: #1a1b26;
+        }
+
+        .toolbar-button.run:hover {
+            background: #9d7cd8;
+            color: #000;
+            box-shadow: 0 8px 20px rgba(187, 154, 247, 0.4);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        /* ---------- STATUS BAR ---------- */
+        .status-bar {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
             font-size: 14px;
             font-weight: 500;
+            background: #1d212d;
+            padding: 8px 22px;
+            border-radius: 40px;
+            border: 1px solid #414868;
+            letter-spacing: 0.3px;
         }
 
-        .toolbar button:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
+        .status-bar i {
+            color: #bb9af7;
+            font-size: 16px;
         }
 
-        .toolbar button#runBtn {
-            background: #ffffff;
-            color: #000000;
+        .zoom-badge {
+            background: #2f354a;
+            padding: 5px 14px;
+            border-radius: 40px;
+            color: #bb9af7;
             font-weight: 600;
-            border: none;
+            min-width: 70px;
+            text-align: center;
+            font-size: 15px;
+            border: 1px solid #414868;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .toolbar button#runBtn:hover {
-            background: #e0e0e0;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        .zoom-badge:hover {
+            background: #3d435c;
+            border-color: #7aa2f7;
         }
 
-        .zoom-info {
-            margin-left: auto;
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 1px;
+        .zoom-badge i {
+            font-size: 12px;
+            margin-right: 6px;
+            color: #9ece6a;
         }
 
+        /* ---------- EDITOR CONTAINER ---------- */
         .editor-container {
             flex: 1;
-            border-radius: 30px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: #111111;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
             position: relative;
-            transition: all 0.3s ease;
+            background: #24283b;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        .editor-container.drag-over {
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 20px 60px rgba(255, 255, 255, 0.1);
-        }
-
+        /* ---------- DRAG & DROP OVERLAY ---------- */
         .drag-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
+            inset: 0;
+            background: rgba(36, 40, 59, 0.95);
+            backdrop-filter: blur(8px);
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: 100;
+            font-size: 20px;
+            font-weight: 500;
+            gap: 16px;
+            color: #c0caf5;
+            border: 2px dashed #bb9af7;
+            margin: 24px;
+            border-radius: 28px;
             pointer-events: none;
+            flex-direction: column;
+        }
+
+        .drag-overlay i {
+            font-size: 42px;
+            color: #bb9af7;
         }
 
         .editor-container.drag-over .drag-overlay {
             display: flex;
         }
 
-        .drag-text {
-            font-size: 24px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.9);
-            letter-spacing: 2px;
-        }
-
+        /* ---------- CODEMIRROR CUSTOMIZATION ---------- */
         .CodeMirror {
-            height: 100%;
+            height: 100% !important;
+            width: 100% !important;
             font-family: 'JetBrains Mono', monospace;
             font-size: 16px;
-            background: transparent !important;
-            padding: 20px;
+            line-height: 1.7;
+            background: #24283b !important;
+            color: #c0caf5;
+            padding: 12px 0;
+            transition: font-size 0.05s ease;
         }
 
         .CodeMirror-gutters {
-            background: transparent !important;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            padding-right: 10px;
+            background: #1f2335 !important;
+            border-right: 1px solid #414868 !important;
+            width: 55px;
         }
 
         .CodeMirror-linenumber {
-            color: rgba(255, 255, 255, 0.2) !important;
+            color: #565f89 !important;
+            padding-right: 18px !important;
+            font-size: 14px;
         }
 
-        .signature {
+        .CodeMirror-cursor {
+            border-left: 2px solid #bb9af7 !important;
+        }
+
+        /* Fix for text selection - this was broken */
+        .CodeMirror-selected {
+            background: #414868 !important;
+        }
+
+        .CodeMirror-focused .CodeMirror-selected {
+            background: #4f5588 !important;
+        }
+
+        .CodeMirror-selectedtext {
+            color: #ffffff !important;
+        }
+
+        /* ---------- SYNTAX HIGHLIGHTING ---------- */
+        .cm-s-dracula span.cm-tag { color: #f7768e; font-weight: 500; }
+        .cm-s-dracula span.cm-attribute { color: #9ece6a; }
+        .cm-s-dracula span.cm-string { color: #9ece6a; }
+        .cm-s-dracula span.cm-keyword { color: #bb9af7; }
+        .cm-s-dracula span.cm-def { color: #7aa2f7; }
+        .cm-s-dracula span.cm-variable { color: #c0caf5; }
+        .cm-s-dracula span.cm-variable-2 { color: #c0caf5; }
+        .cm-s-dracula span.cm-comment { color: #565f89; font-style: italic; }
+        .cm-s-dracula span.cm-meta { color: #ff9e64; }
+        .cm-s-dracula span.cm-number { color: #ff9e64; }
+        .cm-s-dracula span.cm-operator { color: #89ddff; }
+        .cm-s-dracula span.cm-property { color: #89ddff; }
+        .cm-s-dracula span.cm-atom { color: #bb9af7; }
+        .cm-s-dracula span.cm-builtin { color: #f7768e; }
+
+        /* ---------- WATERMARK (v.3) ---------- */
+        .watermark {
             position: fixed;
-            bottom: 45px;
-            right: 55px;
-            font-size: 12px;
-            font-weight: 300;
-            letter-spacing: 4px;
-            color: rgba(255, 255, 255, 0.1);
-            text-transform: lowercase;
-            pointer-events: none;
+            bottom: 26px;
+            right: 32px;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 2.5px;
+            color: #414868;
+            background: #1f2335;
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1px solid #414868;
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            font-family: 'Inter', sans-serif;
         }
 
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .watermark i {
+            color: #bb9af7;
+            margin-right: 8px;
+            font-size: 12px;
+        }
 
-        .file-input { display: none; }
+        .watermark-version {
+            color: #9ece6a;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        /* ---------- SCROLLBAR ---------- */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2335; }
+        ::-webkit-scrollbar-thumb { background: #414868; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #565f89; }
+
+        /* ---------- UTILITY ---------- */
+        .hidden {
+            display: none;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
     </style>
 </head>
 <body>
+
+<div class="editor-wrap">
+    <!-- Toolbar with icons only -->
     <div class="toolbar">
-        <button id="loadBtn">Open</button>
-        <button id="saveBtn">Save</button>
-        <button id="clearBtn">Clear</button>
-        <button id="runBtn">Run Preview</button>
-        <div class="zoom-info" id="zoomInfo">100%</div>
+        <button class="toolbar-button" id="loadBtn" title="Open file">
+            <i class="fas fa-folder-open"></i>
+        </button>
+        <button class="toolbar-button" id="saveBtn" title="Save">
+            <i class="fas fa-download"></i>
+        </button>
+        <button class="toolbar-button" id="clearBtn" title="Clear">
+            <i class="fas fa-rotate-left"></i>
+        </button>
+        <button class="toolbar-button run" id="runBtn" title="Run preview">
+            <i class="fas fa-play"></i>
+        </button>
+        
+        <!-- Status with zoom indicator -->
+        <div class="status-bar">
+            <i class="fas fa-code"></i>
+            <span>HTML</span>
+            <div class="zoom-badge" id="zoomDisplay" title="Double-click to reset to 100%">
+                <i class="fas fa-search-plus"></i> 
+                <span id="zoomPercent">100</span>%
+            </div>
+        </div>
     </div>
-    
+
+    <!-- Editor with drag & drop -->
     <div class="editor-container" id="editorContainer">
         <div class="drag-overlay">
-            <div class="drag-text">DROP HTML FILE</div>
+            <i class="fas fa-cloud-upload-alt"></i> 
+            <span>Drop .html file here</span>
         </div>
         <textarea id="editor"></textarea>
     </div>
+</div>
 
-    <div class="signature">krzysiekqq</div>
+<!-- Watermark (v.3) Kzysiekqq -->
+<div class="watermark">
+    <i class="fas fa-code"></i>
+    <span class="watermark-version">(v.3)</span> Kzysiekqq
+</div>
 
-    <input type="file" id="fileInput" class="file-input" accept=".html,.htm">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+<!-- Hidden file input -->
+<input type="file" id="fileInput" accept=".html,.htm">
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
-                mode: "htmlmixed",
-                theme: "base16-dark",
-                lineNumbers: true,
-                autoCloseTags: true,
-                lineWrapping: true
-            });
+<!-- CodeMirror scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
 
-            const editorContainer = document.getElementById('editorContainer');
+<script>
+    (function() {
+        // ---------- INITIALIZATION ----------
+        const textarea = document.getElementById('editor');
+        const editor = CodeMirror.fromTextArea(textarea, {
+            mode: 'htmlmixed',
+            theme: 'dracula',
+            lineNumbers: true,
+            autoCloseTags: true,
+            matchBrackets: true,
+            lineWrapping: true,
+            gutters: ['CodeMirror-linenumbers'],
+            tabSize: 2,
+            indentWithTabs: false,
+            styleSelectedText: true,
+            extraKeys: {
+                'Ctrl-S': function() { saveFile(); },
+                'Cmd-S': function() { saveFile(); }
+            }
+        });
 
-            // Funkcja do wczytywania pliku
-            function loadFile(file) {
-                if (file && (file.name.endsWith('.html') || file.name.endsWith('.htm'))) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => editor.setValue(e.target.result);
-                    reader.readAsText(file);
+        // DOM elements
+        const container = document.getElementById('editorContainer');
+        const fileInput = document.getElementById('fileInput');
+        const zoomPercentSpan = document.getElementById('zoomPercent');
+        const zoomDisplay = document.getElementById('zoomDisplay');
+
+        // ---------- AUTO-SAVE (localStorage) ----------
+        const STORAGE_KEY = 'zen_html_editor_v3';
+
+        // Save on changes
+        editor.on('change', function() {
+            localStorage.setItem(STORAGE_KEY, editor.getValue());
+        });
+
+        // Save before unload
+        window.addEventListener('beforeunload', function() {
+            localStorage.setItem(STORAGE_KEY, editor.getValue());
+        });
+
+        // Load saved content
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            editor.setValue(saved);
+        } else {
+            // Default template
+            editor.setValue('<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width,initial-scale=1">\n  <title>∞ · wide editor</title>\n  <style>\n    body { \n      background: #1a1b26; \n      color: #c0caf5; \n      font-family: system-ui; \n      display: grid; \n      place-items: center; \n      height: 100vh; \n      margin: 0; \n    }\n    h1 { \n      font-size: clamp(2rem, 8vw, 5rem); \n    }\n  </style>\n</head>\n<body>\n  <h1>🌿 smooth & wide</h1>\n  <p>ctrl + scroll = zoom</p>\n</body>\n</html>');
+        }
+
+        // ---------- ZOOM FUNCTIONALITY ----------
+        let currentZoom = 100;
+        const MIN_ZOOM = 50;
+        const MAX_ZOOM = 300;
+        const ZOOM_STEP = 10;
+
+        function updateZoom(zoomLevel) {
+            currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel));
+            // Calculate font size (16px at 100%)
+            const fontSize = (currentZoom * 0.16) + 'px';
+            document.querySelector('.CodeMirror').style.fontSize = fontSize;
+            zoomPercentSpan.innerText = currentZoom;
+            
+            // Refresh editor to prevent rendering issues
+            editor.refresh();
+        }
+
+        // Mouse wheel zoom with Ctrl key
+        container.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+                updateZoom(currentZoom + delta);
+            }
+        }, { passive: false });
+
+        // Prevent default browser zoom in editor area
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey && e.target.closest('.CodeMirror')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Reset zoom on double-click
+        zoomDisplay.addEventListener('dblclick', function() {
+            updateZoom(100);
+        });
+
+        // ---------- KEYBOARD SHORTCUTS ----------
+        editor.setOption('extraKeys', {
+            'Ctrl-Enter': function(cm) {
+                document.getElementById('runBtn').click();
+            },
+            'Shift-Ctrl-S': function(cm) {
+                saveFile();
+            },
+            'Ctrl-0': function(cm) {
+                updateZoom(100);
+            }
+        });
+
+        // Handle Ctrl + / Ctrl - shortcuts
+        window.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.target.closest('.CodeMirror')) {
+                if (e.key === '+' || e.key === '=') {
+                    e.preventDefault();
+                    updateZoom(currentZoom + ZOOM_STEP);
+                } else if (e.key === '-' || e.key === '_') {
+                    e.preventDefault();
+                    updateZoom(currentZoom - ZOOM_STEP);
+                } else if (e.key === '0') {
+                    e.preventDefault();
+                    updateZoom(100);
                 }
             }
-
-            // Drag & Drop
-            editorContainer.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                editorContainer.classList.add('drag-over');
-            });
-
-            editorContainer.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                editorContainer.classList.remove('drag-over');
-            });
-
-            editorContainer.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                editorContainer.classList.remove('drag-over');
-                
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    loadFile(files[0]);
-                }
-            });
-
-            // Poprzednie funkcje
-            document.getElementById('runBtn').addEventListener('click', () => {
-                const win = window.open('', '_blank');
-                win.document.write(editor.getValue());
-                win.document.close();
-            });
-
-            document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
-            
-            document.getElementById('fileInput').addEventListener('change', (e) => {
-                loadFile(e.target.files[0]);
-            });
-
-            document.getElementById('saveBtn').addEventListener('click', () => {
-                const blob = new Blob([editor.getValue()], { type: 'text/html' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'index.html';
-                a.click();
-            });
-
-            document.getElementById('clearBtn').addEventListener('click', () => {
-                if (confirm('Clear code?')) editor.setValue('');
-            });
-
-            editor.setValue('<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <style>\n    body { background: #000; color: #fff; text-align: center; padding-top: 50px; font-family: sans-serif; }\n  </style>\n</head>\n<body>\n  <h1>Clean Design</h1>\n  <p>Ready to code.</p>\n</body>\n</html>');
         });
-    </script>
+
+        // ---------- DRAG & DROP ----------
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            container.classList.add('drag-over');
+        });
+
+        container.addEventListener('dragleave', () => {
+            container.classList.remove('drag-over');
+        });
+
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            container.classList.remove('drag-over');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.html') || file.name.endsWith('.htm'))) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    editor.setValue(ev.target.result);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // ---------- BUTTON FUNCTIONS ----------
+        document.getElementById('loadBtn').addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    editor.setValue(ev.target.result);
+                };
+                reader.readAsText(file);
+            }
+            fileInput.value = ''; // Allow re-selecting same file
+        });
+
+        function saveFile() {
+            const blob = new Blob([editor.getValue()], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'index.html';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', saveFile);
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Clear the editor?')) {
+                editor.setValue('');
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        });
+
+        document.getElementById('runBtn').addEventListener('click', () => {
+            const code = editor.getValue();
+            const win = window.open('', '_blank');
+            win.document.write(code);
+            win.document.close();
+        });
+
+        // ---------- EXTRA SAFETY ----------
+        editor.on('blur', function() {
+            localStorage.setItem(STORAGE_KEY, editor.getValue());
+        });
+
+        // Initial refresh
+        setTimeout(() => {
+            editor.refresh();
+            updateZoom(100);
+        }, 50);
+
+        // Fix for text selection colors
+        editor.on('cursorActivity', function() {
+            // This forces CodeMirror to redraw selection
+        });
+    })();
+</script>
+
+<!-- Additional style fixes -->
+<style>
+    /* Ensure text selection is visible */
+    .CodeMirror-selected {
+        background: #414868 !important;
+    }
+    
+    .CodeMirror-focused .CodeMirror-selected {
+        background: #4f5588 !important;
+    }
+    
+    .CodeMirror-selectedtext {
+        color: #ffffff !important;
+    }
+    
+    /* Make sure editor takes full width */
+    .editor-wrap {
+        width: 100%;
+    }
+    
+    /* Fix for any potential overlay issues */
+    .drag-overlay {
+        pointer-events: none;
+    }
+</style>
+
 </body>
 </html>
